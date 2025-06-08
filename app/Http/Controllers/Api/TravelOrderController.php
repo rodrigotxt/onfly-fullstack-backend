@@ -28,7 +28,7 @@ class TravelOrderController extends Controller
         //$this->authorize('viewAny', TravelOrder::class);
 
         $query = TravelOrder::query()
-            ->with('user')
+            ->with(['user', 'updatedBy'])
             ->orderBy('created_at', 'desc');
 
         // Filtro por status
@@ -72,6 +72,7 @@ class TravelOrderController extends Controller
         $order = TravelOrder::create([
             'order_id' => $this->generateOrderId(),
             'user_id' => Auth::id(),
+            'customer_name' => $validated['customer_name'],
             'destination' => $validated['destination'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
@@ -84,14 +85,14 @@ class TravelOrderController extends Controller
     /**
      * Exibe um pedido de viagem específico
      *
-     * @param TravelOrder $travelOrder
+     * @param $id
      * @return TravelOrderResource
      */
-    public function show(TravelOrder $travelOrder)
+    public function show($id)
     {
-        $this->authorize('view', $travelOrder);
-
-        return new TravelOrderResource($travelOrder->load('user'));
+        //$this->authorize('view', $travelOrder);
+        $travelOrder = TravelOrder::with(['user', 'updatedBy'])->find($id);
+        return new TravelOrderResource($travelOrder->load('user', 'updatedBy'));
     }
 
     /**
