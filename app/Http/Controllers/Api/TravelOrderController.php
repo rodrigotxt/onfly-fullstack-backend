@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\TravelOrder;
+use App\Http\Requests\StoreTravelOrderRequest;
+use App\Http\Requests\UpdateTravelOrderStatusRequest;
+use App\Http\Resources\TravelOrderResource;
+use App\Http\Resources\TravelOrderCollection;
+use App\Notifications\OrderStatusChanged;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
+class TravelOrderController extends Controller
+{
+    use AuthorizesRequests;
+    /**
+     * Lista todos os pedidos de viagem com possibilidade de filtro
+     *
+     * @param Request $request
+     * @return TravelOrderCollection
+     */
+    public function index(Request $request)
+    {
+        // Verifica se o usuário tem permissão para listar todos os pedidos
+        //$this->authorize('viewAny', TravelOrder::class);
+
+        $query = TravelOrder::query()
+            ->with('user')
+            ->orderBy('created_at', 'desc');
+
+        // Filtro por status
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filtro por destino
+        if ($request->has('destination')) {
+            $query->where('destination', 'like', '%' . $request->destination . '%');
+        }
+
+        // Filtro por período (data de criação)
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('start_date', [$request->start_date, $request->end_date]);
+        }
+
+        // Filtro por período (data de viagem)
+        if ($request->has('travel_start_date') && $request->has('travel_end_date')) {
+            $query->whereBetween('start_date', [$request->travel_start_date, $request->travel_end_date])
+                  ->orWhereBetween('end_date', [$request->travel_start_date, $request->travel_end_date]);
+        }
+
+        // Paginação (opcional)
+        $orders = $query->paginate($request->per_page ?? 15);
+
+        return new TravelOrderCollection($orders);
+    }
+
+    /**
+     * Cria um novo pedido de viagem
+     *
+     * @param StoreTravelOrderRequest $request
+     * @return TravelOrderResource
+     */
+    public function store(StoreTravelOrderRequest $request)
+    {
+
+        $validated = $request->validated();
+
+        $order = TravelOrder::create([
+            'order_id' => $this->generateOrderId(),
+            'user_id' => Auth::id(),
+            'destination' => $validated['destination'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'status' => 'solicitado',
+        ]);
+
+        return new TravelOrderResource($order);
+    }
+
+    /**
+     * Exibe um pedido de viagem específico
+     *
+     * @param TravelOrder $travelOrder
+     * @return TravelOrderResource
+     */
+    public function show(TravelOrder $travelOrder)
+    {
+        $this->authorize('view', $travelOrder);
+
+        return new TravelOrderResource($travelOrder->load('user'));
+    }
+
+    /**
+     * Atualiza o status de um pedido de viagem
+     *
+     * @param UpdateTravelOrderStatusRequest $request
+     * @param TravelOrder $travelOrder
+     * @return TravelOrderResource
+     */
+    public function updateStatus(UpdateTravelOrderStatusRequest $request, TravelOrder $travelOrder)
+    {
+        $this->authorize('updateStatus', $travelOrder);
+
+        $previousStatus = $travelOrder->status;
+        $newStatus = $request->status;
+
+        $travelOrder->update([
+            'status' => $newStatus,
+            'cancel_reason' => $newStatus === 'cancelado' ? $request->cancel_reason : null
+        ]);
+
+        // Notifica o usuário sobre mudança de status
+        if ($previousStatus !== $newStatus) {
+            $travelOrder->user->notify(new OrderStatusChanged($travelOrder, $previousStatus));
+        }
+
+        return new TravelOrderResource($travelOrder);
+    }
+
+    /**
+     * Cancela um pedido de viagem aprovado
+     *
+     * @param Request $request
+     * @param TravelOrder $travelOrder
+     * @return TravelOrderResource
+     */
+    public function cancelApprovedOrder(Request $request, TravelOrder $travelOrder)
+    {
+        $this->authorize('cancel', $travelOrder);
+
+        if ($travelOrder->status !== 'aprovado') {
+            abort(400, 'Somente pedidos aprovados podem ser cancelados.');
+        }
+
+        $travelOrder->update([
+            'status' => 'cancelado',
+            'cancel_reason' => $request->cancel_reason
+        ]);
+
+        $travelOrder->user->notify(new OrderStatusChanged($travelOrder, 'aprovado'));
+
+        return new TravelOrderResource($travelOrder);
+    }
+
+    /**
+     * Gera um ID único para o pedido
+     *
+     * @return string
+     */
+    protected function generateOrderId()
+    {
+        return 'TRAVEL-' . strtoupper(uniqid());
+    }
+}
