@@ -17,8 +17,8 @@ Route::middleware('auth:api')->group(function () {
     Route::group(['prefix' => 'travel'], function () {        
         Route::get('/orders', [TravelOrderController::class, 'index']);
         Route::post('/orders', [TravelOrderController::class, 'store']);
-        Route::get('/orders/{id}', [TravelOrderController::class, 'show']);
-        Route::put('/orders/{id}/status', [TravelOrderController::class, 'updateStatus']);
+        Route::get('/order/{id}', [TravelOrderController::class, 'show']);
+        Route::put('/order/{id}/status', [TravelOrderController::class, 'updateStatus']);
     });
     
     // Notificações
