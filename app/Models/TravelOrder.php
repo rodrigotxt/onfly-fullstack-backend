@@ -14,10 +14,12 @@ class TravelOrder extends Model
     protected $fillable = [
         'order_id',
         'user_id',
+        'customer_name',
         'destination',
         'start_date',
         'end_date',
         'status',
+        'updated_by',
         'cancel_reason'
     ];
 
@@ -27,6 +29,11 @@ class TravelOrder extends Model
     ];
 
     public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
