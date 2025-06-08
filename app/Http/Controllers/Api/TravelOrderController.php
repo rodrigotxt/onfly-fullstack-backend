@@ -99,12 +99,27 @@ class TravelOrderController extends Controller
      * Atualiza o status de um pedido de viagem
      *
      * @param UpdateTravelOrderStatusRequest $request
-     * @param TravelOrder $travelOrder
+     * @param $travelOrderId
      * @return TravelOrderResource
      */
-    public function updateStatus(UpdateTravelOrderStatusRequest $request, TravelOrder $travelOrder)
+    public function updateStatus(UpdateTravelOrderStatusRequest $request, $travelOrderId)
     {
-        $this->authorize('updateStatus', $travelOrder);
+        $travelOrder = TravelOrder::find($travelOrderId);
+
+        //$this->authorize('updateStatus', $travelOrder); // TODO: controle de acesso
+
+        if (!$travelOrder) {
+            abort(404, 'Pedido de viagem nao encontrado.');
+        }
+        $user = Auth::user();
+
+        // verifica se o usuário logado é o mesmo que criou o pedido
+        if ($user->id == $travelOrder->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não é permitido atualizar o status de um pedido criado pelo mesmo usuário.',
+            ], 403);
+        }
 
         $previousStatus = $travelOrder->status;
         $newStatus = $request->status;
@@ -114,10 +129,12 @@ class TravelOrderController extends Controller
             'cancel_reason' => $newStatus === 'cancelado' ? $request->cancel_reason : null
         ]);
 
+        /*
         // Notifica o usuário sobre mudança de status
         if ($previousStatus !== $newStatus) {
             $travelOrder->user->notify(new OrderStatusChanged($travelOrder, $previousStatus));
         }
+        */
 
         return new TravelOrderResource($travelOrder);
     }

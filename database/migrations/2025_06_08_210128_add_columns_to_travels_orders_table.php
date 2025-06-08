@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('travel_orders', function (Blueprint $table) {
             $table->string('customer_name');
-            $table->foreignIdFor(App\Models\User::class, 'updated_by')->nullable();
+            $table->foreignIdFor(App\Models\User::class, 'updated_by')->nullable()->constrained();
         });
     }
 
