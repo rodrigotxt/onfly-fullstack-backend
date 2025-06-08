@@ -14,10 +14,12 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:api')->group(function () {
     // Pedidos de viagem
-    Route::get('/travel-orders', [TravelOrderController::class, 'index']);
-    Route::post('/travel-orders', [TravelOrderController::class, 'store']);
-    Route::get('/travel-orders/{id}', [TravelOrderController::class, 'show']);
-    Route::put('/travel-orders/{id}/status', [TravelOrderController::class, 'updateStatus']);
+    Route::group(['prefix' => 'travel'], function () {        
+        Route::get('/orders', [TravelOrderController::class, 'index']);
+        Route::post('/orders', [TravelOrderController::class, 'store']);
+        Route::get('/orders/{id}', [TravelOrderController::class, 'show']);
+        Route::put('/orders/{id}/status', [TravelOrderController::class, 'updateStatus']);
+    });
     
     // Notificações
     Route::get('/notifications', [NotificationController::class, 'index']);
