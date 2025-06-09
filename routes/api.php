@@ -19,6 +19,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/orders', [TravelOrderController::class, 'store']);
         Route::get('/order/{id}', [TravelOrderController::class, 'show']);
         Route::put('/order/{id}/status', [TravelOrderController::class, 'updateStatus']);
+        Route::put('/order/{id}/cancel', [TravelOrderController::class, 'updateStatus']);
     });
     
     // Notificações
