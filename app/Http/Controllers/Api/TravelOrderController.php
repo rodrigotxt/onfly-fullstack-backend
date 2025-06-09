@@ -104,63 +104,45 @@ class TravelOrderController extends Controller
      */
     public function updateStatus(UpdateTravelOrderStatusRequest $request, $travelOrderId)
     {
+        // Verifica se o pedido existe
         $travelOrder = TravelOrder::find($travelOrderId);
-
-        //$this->authorize('updateStatus', $travelOrder); // TODO: controle de acesso
-
+        
+        // se não encontrar, retorna erro
         if (!$travelOrder) {
-            abort(404, 'Pedido de viagem nao encontrado.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Pedido de viagem não encontrado.',
+                'error_code' => 'travel_order_not_found'
+            ], 404);
         }
+    
+        // carrega os relacionamentos
+        $travelOrder->load(['user', 'updatedBy']);
+    
         $user = Auth::user();
-
-        // verifica se o usuário logado é o mesmo que criou o pedido
+        
+        // Verifica se o usuário logado é o mesmo que criou o pedido
         if ($user->id == $travelOrder->user_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Não é permitido atualizar o status de um pedido criado pelo mesmo usuário.',
+                'error_code' => 'self_status_update_not_allowed'
             ], 403);
         }
-
+    
         $previousStatus = $travelOrder->status;
-        $newStatus = $request->status;
+        $newStatus = $request->status ?? ($request->cancel_reason ? 'cancelado' : $previousStatus);
 
+        // Atualiza o pedido
         $travelOrder->update([
             'status' => $newStatus,
-            'cancel_reason' => $newStatus === 'cancelado' ? $request->cancel_reason : null
+            'cancel_reason' => $newStatus === 'cancelado' ? $request->cancel_reason : null,
+            'updated_by' => $user->id
         ]);
-
-        /*
-        // Notifica o usuário sobre mudança de status
-        if ($previousStatus !== $newStatus) {
-            $travelOrder->user->notify(new OrderStatusChanged($travelOrder, $previousStatus));
-        }
-        */
-
-        return new TravelOrderResource($travelOrder);
-    }
-
-    /**
-     * Cancela um pedido de viagem aprovado
-     *
-     * @param Request $request
-     * @param TravelOrder $travelOrder
-     * @return TravelOrderResource
-     */
-    public function cancelApprovedOrder(Request $request, TravelOrder $travelOrder)
-    {
-        $this->authorize('cancel', $travelOrder);
-
-        if ($travelOrder->status !== 'aprovado') {
-            abort(400, 'Somente pedidos aprovados podem ser cancelados.');
-        }
-
-        $travelOrder->update([
-            'status' => 'cancelado',
-            'cancel_reason' => $request->cancel_reason
-        ]);
-
-        $travelOrder->user->notify(new OrderStatusChanged($travelOrder, 'aprovado'));
-
+    
+        // Recarrega o modelo com os relacionamentos atualizados
+        $travelOrder->refresh()->load(['user', 'updatedBy']);
+    
         return new TravelOrderResource($travelOrder);
     }
 
