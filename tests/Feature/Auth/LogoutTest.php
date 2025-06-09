@@ -13,10 +13,9 @@ class LogoutTest extends TestCase
 
     public function test_usuario_pode_fazer_logout()
     {
-        $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        $this->loginAsApiUser();
 
-        $response = $this->postJson('/api/logout');
+        $response = $this->postJson('/api/auth/logout');
 
         $response->assertStatus(200)
             ->assertJson([
@@ -26,7 +25,7 @@ class LogoutTest extends TestCase
 
     public function test_logout_falha_sem_autenticacao()
     {
-        $response = $this->postJson('/api/logout');
+        $response = $this->postJson('/api/auth/logout');
 
         $response->assertStatus(401)
             ->assertJson([
