@@ -131,7 +131,15 @@ class TravelOrderController extends Controller
         }
     
         $previousStatus = $travelOrder->status;
-        $newStatus = $request->status ?? ($request->cancel_reason ? 'cancelado' : $previousStatus);
+        $newStatus = $request->status ?? (!empty($request->cancel_reason) ? 'cancelado' : $previousStatus);
+
+        if($newStatus == 'cancelado' && ($newStatus == $previousStatus)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pedido já cancelado',
+                'error_code' => 'status_cancelled'
+            ], 400);
+        }
 
         // Atualiza o pedido
         $travelOrder->update([

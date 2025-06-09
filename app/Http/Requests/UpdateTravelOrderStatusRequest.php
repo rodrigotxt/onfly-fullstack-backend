@@ -14,8 +14,8 @@ class UpdateTravelOrderStatusRequest extends FormRequest
     public function rules()
     {
         return [
-            'status' => 'required_without:cancel_reason|in:solicitado,aprovado,cancelado',
             'cancel_reason' => 'required_if:status,cancelado|nullable|string|max:500',
+            'status' => 'required_without:cancel_reason|in:solicitado,aprovado,cancelado',
         ];
     }
 }

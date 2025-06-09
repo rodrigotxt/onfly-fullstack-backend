@@ -6,7 +6,6 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\TravelOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use PHPUnit\Framework\Attributes\Test;
 
 class TravelOrderStatusTest extends TestCase
