@@ -13,13 +13,15 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    libzip-dev
+    libzip-dev \ 
+    sqlite3 \
+    libsqlite3-dev
 
 # Limpar cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar extensões PHP
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+RUN docker-php-ext-install pdo_sqlite pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Obter o Composer mais recente
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
