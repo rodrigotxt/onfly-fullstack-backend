@@ -37,7 +37,8 @@ COPY . .
 COPY .env.example .env
 RUN mkdir -p storage/framework/cache \
     mkdir -p storage/framework/sessions \
-    mkdir -p storage/framework/views
+    mkdir -p storage/framework/views \
+    mkdir -p bootstrap/cache
 
 # Instalar dependências do Composer
 RUN composer install --optimize-autoloader --no-dev
@@ -45,6 +46,9 @@ RUN composer install --optimize-autoloader --no-dev
 # Configurar permissões
 RUN chown -R $user:www-data /var/www/storage
 RUN chmod -R 775 /var/www/storage
+RUN mkdir -p /var/www/bootstrap/cache && \
+    chown -R www-data:www-data /var/www/bootstrap/cache && \
+    chmod -R 775 /var/www/bootstrap/cache
 
 # Expor porta 9000 e iniciar PHP-FPM
 EXPOSE 9000
