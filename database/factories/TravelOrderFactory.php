@@ -17,13 +17,17 @@ class TravelOrderFactory extends Factory
      */
     public function definition(): array
     {
+        $startDate = $this->faker->dateTimeBetween('now', '+6 months');
+        $minEndDate = (clone $startDate)->modify('+7 days');
+        $endDate = $this->faker->dateTimeBetween($minEndDate, (clone $minEndDate)->modify('+3 months'));
+
         return [
             'user_id' => User::factory(),
             'order_id' => 'TRAVEL-' . strtoupper(uniqid()),
             'customer_name' => $this->faker->name(),
             'destination' => $this->faker->city(),
-            "start_date" => $this->faker->date(),
-            "end_date" => $this->faker->date(+1, "+7 days"),
+            "start_date" => $startDate->format('Y-m-d'),
+            "end_date" => $endDate->format('Y-m-d'),
         ];
     }
 }
