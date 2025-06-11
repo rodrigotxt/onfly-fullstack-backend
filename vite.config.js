@@ -10,4 +10,11 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    devServer: {        
+      allowedHosts: [
+        'localhost',
+        '127.0.0.1',
+        '*.amazonaws.com',
+        '*.rodrigo.inf.br'],
+    }
 });
